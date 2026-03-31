@@ -40,3 +40,9 @@ def load_prices(prices_file="prices.json"):
 def save_prices(prices, prices_file="prices.json"):
     with open(prices_file, "w", encoding="utf-8") as f:
         json.dump(prices, f, ensure_ascii=False, indent=2)
+
+
+def get_price(product_name):
+    """Get stored price for a product, or None if not found."""
+    prices = load_prices()
+    return prices.get(product_name)

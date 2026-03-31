@@ -31,10 +31,15 @@ def validate_quantity(quantity):
 
 
 def update_product_price(product_name, price):
-    """Update prices.json with latest known price."""
+    """Update prices.json and notify if price changed."""
     prices = storage.load_prices()
+    old_price = prices.get(product_name)
+
     prices[product_name] = price
     storage.save_prices(prices)
+
+    if old_price is None or old_price != price:
+        print(f"✓ Cena atjaunināta: {product_name} → {price:.2f} EUR")
 
 
 def save_product(shopping_list, product_name, quantity, price):
@@ -46,10 +51,8 @@ def save_product(shopping_list, product_name, quantity, price):
     total = price * quantity
 
     print(
-        f"Pievienots: {product_name} × {quantity} — ({price:.2f} EUR/gab) = {total:.2f} EUR"
+        f"✓ Pievienots: {product_name} × {quantity} — ({price:.2f} EUR/gab) = {total:.2f} EUR"
     )
-
-    return True
 
 
 def add_product_interactive(shopping_list):
@@ -79,11 +82,9 @@ def add_product_interactive(shopping_list):
         except ValueError as e:
             print(f"Kļūda: {e}")
 
-    # --- UPDATE prices.json ---
     update_product_price(product_name, price)
-
-    # --- SAVE shopping.json ---
-    return save_product(shopping_list, product_name, quantity, price)
+    save_product(shopping_list, product_name, quantity, price)
+    return True
 
 
 def add_product_with_quantity(shopping_list, product_name, quantity):
@@ -100,10 +101,9 @@ def add_product_with_quantity(shopping_list, product_name, quantity):
         return False
 
     # --- PRICE ---
-    prices = storage.load_prices()
+    suggested_price = storage.get_price(product_name)
 
-    if product_name in prices:
-        suggested_price = prices[product_name]
+    if suggested_price is not None:
         print(f"Atrasta cena: {suggested_price:.2f} EUR/gab")
 
         while True:
@@ -132,11 +132,9 @@ def add_product_with_quantity(shopping_list, product_name, quantity):
             except ValueError as e:
                 print(f"Kļūda: {e}")
 
-    # --- UPDATE prices.json ---
     update_product_price(product_name, price)
-
-    # --- SAVE shopping.json ---
-    return save_product(shopping_list, product_name, quantity, price)
+    save_product(shopping_list, product_name, quantity, price)
+    return True
 
 
 def add_product_full(shopping_list, product_name, quantity, price):
@@ -159,11 +157,9 @@ def add_product_full(shopping_list, product_name, quantity, price):
         print(f"Kļūda: {e}")
         return False
 
-    # --- UPDATE prices.json ---
     update_product_price(product_name, price)
-
-    # --- SAVE shopping.json ---
-    return save_product(shopping_list, product_name, quantity, price)
+    save_product(shopping_list, product_name, quantity, price)
+    return True
 
 
 def list_products(shopping_list):
