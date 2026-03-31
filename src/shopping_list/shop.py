@@ -1,76 +1,169 @@
 import sys
 import storage
 import utils
+import constants
 
 
-def add_product(shopping_list, product_name=None, quantity=None, price=None):
-    """Add a new product to the products list."""
+def validate_product_name(product_name):
+    """Validate and normalize product name."""
+    if not isinstance(product_name, str) or not product_name.strip():
+        print("Kļūda: preces nosaukums nav derīgs.")
+        return None
 
-    # --- PRODUCT NAME ---
-    if product_name is None:
-        product_name = input("Ievadiet preces nosaukumu: ")
+    return utils.normalize_product_name(product_name)
 
-    product_name = utils.normalize_product_name(product_name)
 
-    # --- QUANTITY ---
-    max_quantity = 99
+def validate_quantity(quantity):
+    """Validate quantity and convert to int."""
+    max_quantity = constants.max_quantity
 
-    if quantity is None:
-        while True:
-            quantity_input = input(f"Ievadiet preču skaitu (no 1-{max_quantity}): ")
+    try:
+        quantity = int(quantity)
+    except ValueError:
+        print("Kļūda: preču skaitam jābūt veselam skaitlim.")
+        return None
 
-            try:
-                quantity = int(quantity_input)
-            except ValueError:
-                print("Lūdzu ievadiet derīgu skaitli.")
-                continue
+    if not (1 <= quantity <= max_quantity):
+        print(f"Kļūda: preču skaitam jābūt no 1 līdz {max_quantity}.")
+        return None
 
-            if 1 <= quantity <= max_quantity:
-                break
-            else:
-                print(f"Skaitlim jābūt no 1 līdz {max_quantity}.")
-    else:
-        try:
-            quantity = int(quantity)
-        except ValueError:
-            print("Kļūda: preču skaitam jābūt veselam skaitlim.")
-            return False
+    return quantity
 
-        if not (1 <= quantity <= max_quantity):
-            print(f"Kļūda: preču skaitam jābūt no 1 līdz {max_quantity}.")
-            return False
 
-    # --- PRICE ---
-    if price is None:
-        while True:
-            price_input = input("Ievadiet preces cenu: ")
+def update_product_price(product_name, price):
+    """Update prices.json with latest known price."""
+    prices = storage.load_prices()
+    prices[product_name] = price
+    storage.save_prices(prices)
 
-            try:
-                price = utils.normalize_price(price_input)
-                break
-            except ValueError as e:
-                print(f"Kļūda: {e}")
-    else:
-        try:
-            price = utils.normalize_price(price)
-        except ValueError as e:
-            print(f"Kļūda: {e}")
-            return False
 
-    # --- SAVE ---
+def save_product(shopping_list, product_name, quantity, price):
+    """Save product to shopping list and print result."""
     shopping_list.append(
         {"product_name": product_name, "quantity": quantity, "price": price}
     )
 
-    # --- CALCULATE TOTAL ---
     total = price * quantity
 
-    # --- PRINT ---
     print(
         f"Pievienots: {product_name} × {quantity} — ({price:.2f} EUR/gab) = {total:.2f} EUR"
     )
 
     return True
+
+
+def add_product_interactive(shopping_list):
+    """Add product step by step with prompts."""
+
+    # --- PRODUCT NAME ---
+    product_name = input("Ievadiet preces nosaukumu: ")
+    product_name = validate_product_name(product_name)
+    if product_name is None:
+        return False
+
+    # --- QUANTITY ---
+    while True:
+        quantity_input = input(
+            f"Ievadiet preču skaitu (no 1-{constants.max_quantity}): "
+        )
+        quantity = validate_quantity(quantity_input)
+        if quantity is not None:
+            break
+
+    # --- PRICE ---
+    while True:
+        price_input = input("Ievadiet preces cenu: ")
+        try:
+            price = utils.normalize_price(price_input)
+            break
+        except ValueError as e:
+            print(f"Kļūda: {e}")
+
+    # --- UPDATE prices.json ---
+    update_product_price(product_name, price)
+
+    # --- SAVE shopping.json ---
+    return save_product(shopping_list, product_name, quantity, price)
+
+
+def add_product_with_quantity(shopping_list, product_name, quantity):
+    """Add product with CLI name and quantity. Price is suggested or prompted."""
+
+    # --- PRODUCT NAME ---
+    product_name = validate_product_name(product_name)
+    if product_name is None:
+        return False
+
+    # --- QUANTITY ---
+    quantity = validate_quantity(quantity)
+    if quantity is None:
+        return False
+
+    # --- PRICE ---
+    prices = storage.load_prices()
+
+    if product_name in prices:
+        suggested_price = prices[product_name]
+        print(f"Atrasta cena: {suggested_price:.2f} EUR/gab")
+
+        while True:
+            use_existing = input("Vai izmantot šo cenu? (y/n): ").strip().lower()
+
+            if use_existing == "y":
+                price = suggested_price
+                break
+            elif use_existing == "n":
+                while True:
+                    price_input = input("Ievadiet jauno cenu: ")
+                    try:
+                        price = utils.normalize_price(price_input)
+                        break
+                    except ValueError as e:
+                        print(f"Kļūda: {e}")
+                break
+            else:
+                print("Lūdzu ievadiet 'y' vai 'n'.")
+    else:
+        while True:
+            price_input = input("Ievadiet preces cenu: ")
+            try:
+                price = utils.normalize_price(price_input)
+                break
+            except ValueError as e:
+                print(f"Kļūda: {e}")
+
+    # --- UPDATE prices.json ---
+    update_product_price(product_name, price)
+
+    # --- SAVE shopping.json ---
+    return save_product(shopping_list, product_name, quantity, price)
+
+
+def add_product_full(shopping_list, product_name, quantity, price):
+    """Add product with CLI name, quantity and price."""
+
+    # --- PRODUCT NAME ---
+    product_name = validate_product_name(product_name)
+    if product_name is None:
+        return False
+
+    # --- QUANTITY ---
+    quantity = validate_quantity(quantity)
+    if quantity is None:
+        return False
+
+    # --- PRICE ---
+    try:
+        price = utils.normalize_price(price)
+    except ValueError as e:
+        print(f"Kļūda: {e}")
+        return False
+
+    # --- UPDATE prices.json ---
+    update_product_price(product_name, price)
+
+    # --- SAVE shopping.json ---
+    return save_product(shopping_list, product_name, quantity, price)
 
 
 def list_products(shopping_list):
@@ -138,6 +231,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Lietošana:")
         print("  python shop.py add")
+        print("  python shop.py add <nosaukums> <daudzums>")
         print("  python shop.py add <nosaukums> <daudzums> <cena>")
         print("  python shop.py list")
         print("  python shop.py total")
@@ -148,13 +242,18 @@ if __name__ == "__main__":
 
     if command == "add":
         if len(sys.argv) == 2:
-            success = add_product(shopping_list)
+            success = add_product_interactive(shopping_list)
+        elif len(sys.argv) == 4:
+            success = add_product_with_quantity(shopping_list, sys.argv[2], sys.argv[3])
         elif len(sys.argv) == 5:
-            success = add_product(shopping_list, sys.argv[2], sys.argv[3], sys.argv[4])
+            success = add_product_full(
+                shopping_list, sys.argv[2], sys.argv[3], sys.argv[4]
+            )
         else:
             print("Kļūda: nepareizs parametru skaits komandai 'add'.")
             print("Lietošana:")
             print("  python shop.py add")
+            print("  python shop.py add <nosaukums> <daudzums>")
             print("  python shop.py add <nosaukums> <daudzums> <cena>")
             sys.exit()
 

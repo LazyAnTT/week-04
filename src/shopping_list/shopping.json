@@ -1,1 +1,27 @@
-[]
+[
+  {
+    "product_name": "Twix",
+    "quantity": 4,
+    "price": 0.78
+  },
+  {
+    "product_name": "Kefīrs",
+    "quantity": 3,
+    "price": 1.32
+  },
+  {
+    "product_name": "Kefīrs",
+    "quantity": 4,
+    "price": 1.23
+  },
+  {
+    "product_name": "Magones",
+    "quantity": 69,
+    "price": 4.54
+  },
+  {
+    "product_name": "Magones",
+    "quantity": 69,
+    "price": 4.54
+  }
+]

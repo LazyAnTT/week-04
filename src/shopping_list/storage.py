@@ -26,3 +26,17 @@ def clear_shopping_list(shopping_file="shopping.json"):
     """Clear all data in the shopping list (reset to empty list)."""
     with open(shopping_file, "w", encoding="utf-8") as file:
         json.dump([], file, ensure_ascii=False, indent=2)
+
+
+def load_prices(prices_file="prices.json"):
+    if not os.path.exists(prices_file):
+        return {}
+
+    with open(prices_file, "r", encoding="utf-8") as f:
+        content = f.read().strip()
+        return json.loads(content) if content else {}
+
+
+def save_prices(prices, prices_file="prices.json"):
+    with open(prices_file, "w", encoding="utf-8") as f:
+        json.dump(prices, f, ensure_ascii=False, indent=2)
