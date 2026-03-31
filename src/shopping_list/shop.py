@@ -3,38 +3,59 @@ import storage
 import utils
 
 
-def add_product(shopping_list):
+def add_product(shopping_list, product_name=None, quantity=None, price=None):
     """Add a new product to the products list."""
 
-    product_name = input("Ievadiet preces nosaukumu: ")
+    # --- PRODUCT NAME ---
+    if product_name is None:
+        product_name = input("Ievadiet preces nosaukumu: ")
+
     product_name = utils.normalize_product_name(product_name)
 
+    # --- QUANTITY ---
     max_quantity = 99
 
-    # --- QUANTITY ---
-    while True:
-        quantity_input = input(f"Ievadiet preču skaitu (no 1-{max_quantity}): ")
+    if quantity is None:
+        while True:
+            quantity_input = input(f"Ievadiet preču skaitu (no 1-{max_quantity}): ")
 
+            try:
+                quantity = int(quantity_input)
+            except ValueError:
+                print("Lūdzu ievadiet derīgu skaitli.")
+                continue
+
+            if 1 <= quantity <= max_quantity:
+                break
+            else:
+                print(f"Skaitlim jābūt no 1 līdz {max_quantity}.")
+    else:
         try:
-            quantity = int(quantity_input)
+            quantity = int(quantity)
         except ValueError:
-            print("Lūdzu ievadiet derīgu skaitli.")
-            continue
+            print("Kļūda: preču skaitam jābūt veselam skaitlim.")
+            return False
 
-        if 1 <= quantity <= max_quantity:
-            break
-        else:
-            print(f"Skaitlim jābūt no 1 līdz {max_quantity}.")
+        if not (1 <= quantity <= max_quantity):
+            print(f"Kļūda: preču skaitam jābūt no 1 līdz {max_quantity}.")
+            return False
 
     # --- PRICE ---
-    while True:
-        price_input = input("Ievadiet preces cenu: ")
+    if price is None:
+        while True:
+            price_input = input("Ievadiet preces cenu: ")
 
+            try:
+                price = utils.normalize_price(price_input)
+                break
+            except ValueError as e:
+                print(f"Kļūda: {e}")
+    else:
         try:
-            price = utils.normalize_price(price_input)
-            break
+            price = utils.normalize_price(price)
         except ValueError as e:
             print(f"Kļūda: {e}")
+            return False
 
     # --- SAVE ---
     shopping_list.append(
@@ -46,8 +67,10 @@ def add_product(shopping_list):
 
     # --- PRINT ---
     print(
-        f"Pievienots: {product_name} × {quantity} — ({price} EUR/gab) = {total:.2f} EUR"
+        f"Pievienots: {product_name} × {quantity} — ({price:.2f} EUR/gab) = {total:.2f} EUR"
     )
+
+    return True
 
 
 def list_products(shopping_list):
@@ -59,56 +82,87 @@ def list_products(shopping_list):
     print("\nPreču saraksts:")
     for i, product in enumerate(shopping_list, start=1):
         print(
-            f"{i}. {product['product_name']} × {product['quantity']} — {product['price']:.2f} EUR/gab — {(product['price'] * product['quantity']):.2f} EUR"
+            f"{i}. {product['product_name']} × {product['quantity']} — "
+            f"{product['price']:.2f} EUR/gab — "
+            f"{(product['price'] * product['quantity']):.2f} EUR"
         )
 
 
 def total_price(shopping_list):
-    """Summ of all shopping list products"""
+    """Sum of all shopping list products."""
     if not shopping_list:
         print("Preču saraksts ir tukšs.")
         return
 
-    productCount = len(product_list)
+    product_count = len(shopping_list)
     total_sum = 0.0
     total_units = 0
 
     for product in shopping_list:
-        total_sum += float(product["price"]) * product["quantity"]
+        total_sum += product["price"] * product["quantity"]
         total_units += product["quantity"]
+
     print(
-        f"Kopā: {total_sum:.2f} EUR ({total_units} {'vienība' if total_units == 1 else 'vienības'}, {productCount} {'produkts' if productCount == 1 else 'produkti'})"
+        f"Kopā: {total_sum:.2f} EUR "
+        f"({total_units} {'vienība' if total_units == 1 else 'vienības'}, "
+        f"{product_count} {'produkts' if product_count == 1 else 'produkti'})"
     )
 
 
+def handle_clear(shopping_list):
+    """Clear all shopping list data."""
+    if not shopping_list:
+        print("Preču saraksts jau ir tukšs.")
+        return
+
+    confirm = input("Vai tiešām dzēst VISU sarakstu? (y/n): ").strip().lower()
+
+    if confirm == "y":
+        storage.clear_shopping_list()
+        shopping_list.clear()
+        print("Preču saraksts ir notīrīts.")
+    else:
+        print("Darbība atcelta.")
+
+
+COMMANDS = {
+    "list": list_products,
+    "total": total_price,
+    "clear": handle_clear,
+}
+
+
 if __name__ == "__main__":
-    product_list = storage.load_shopping_list()
+    shopping_list = storage.load_shopping_list()
 
     if len(sys.argv) < 2:
         print("Lietošana:")
-        print("  python shop.py list")
         print("  python shop.py add")
-        print(" python shop.py total")
+        print("  python shop.py add <nosaukums> <daudzums> <cena>")
+        print("  python shop.py list")
+        print("  python shop.py total")
+        print("  python shop.py clear")
         sys.exit()
 
     command = sys.argv[1]
 
-    if command == "list":
-        list_products(product_list)
-
-    elif command == "add":
-        add_product(product_list)
-        storage.save_shopping_list(product_list)
-    elif command == "clear":
-        confirm = input("Vai tiešām dzēst VISU sarakstu? (y/n): ")
-
-        if confirm.lower() == "y":
-            storage.clear_shopping_list()
-            print("Saraksts ir notīrīts.")
+    if command == "add":
+        if len(sys.argv) == 2:
+            success = add_product(shopping_list)
+        elif len(sys.argv) == 5:
+            success = add_product(shopping_list, sys.argv[2], sys.argv[3], sys.argv[4])
         else:
-            print("Darbība atcelta.")
-    elif command == "total":
-        total_price(product_list)
+            print("Kļūda: nepareizs parametru skaits komandai 'add'.")
+            print("Lietošana:")
+            print("  python shop.py add")
+            print("  python shop.py add <nosaukums> <daudzums> <cena>")
+            sys.exit()
+
+        if success:
+            storage.save_shopping_list(shopping_list)
+
+    elif command in COMMANDS:
+        COMMANDS[command](shopping_list)
 
     else:
         print("Nezināma komanda.")
