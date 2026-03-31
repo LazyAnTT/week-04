@@ -9,18 +9,45 @@ def add_product(shopping_list):
     product_name = input("Ievadiet preces nosaukumu: ")
     product_name = utils.normalize_product_name(product_name)
 
+    max_quantity = 99
+
+    # --- QUANTITY ---
+    while True:
+        quantity_input = input(f"Ievadiet preču skaitu (no 1-{max_quantity}): ")
+
+        try:
+            quantity = int(quantity_input)
+        except ValueError:
+            print("Lūdzu ievadiet derīgu skaitli.")
+            continue
+
+        if 1 <= quantity <= max_quantity:
+            break
+        else:
+            print(f"Skaitlim jābūt no 1 līdz {max_quantity}.")
+
+    # --- PRICE ---
     while True:
         price_input = input("Ievadiet preces cenu: ")
 
         try:
             price = utils.normalize_price(price_input)
-            break  #  exit loop when valid
+            break
         except ValueError as e:
             print(f"Kļūda: {e}")
 
-    shopping_list.append({"product_name": product_name, "price": price})
+    # --- SAVE ---
+    shopping_list.append(
+        {"product_name": product_name, "quantity": quantity, "price": price}
+    )
 
-    print(f"Pievienots: {product_name} ({price} EUR)")
+    # --- CALCULATE TOTAL ---
+    total = price * quantity
+
+    # --- PRINT ---
+    print(
+        f"Pievienots: {product_name} × {quantity} — ({price} EUR/gab) = {total:.2f} EUR"
+    )
 
 
 def list_products(shopping_list):
@@ -31,7 +58,9 @@ def list_products(shopping_list):
 
     print("\nPreču saraksts:")
     for i, product in enumerate(shopping_list, start=1):
-        print(f"{i}. {product['product_name']} - {product['price']} EUR")
+        print(
+            f"{i}. {product['product_name']} × {product['quantity']} — {product['price']:.2f} EUR/gab — {(product['price'] * product['quantity']):.2f} EUR"
+        )
 
 
 def total_price(shopping_list):
@@ -41,13 +70,14 @@ def total_price(shopping_list):
         return
 
     productCount = len(product_list)
-    total = 0.0
+    total_sum = 0.0
+    total_units = 0
 
     for product in shopping_list:
-        total += float(product["price"])
-
+        total_sum += float(product["price"]) * product["quantity"]
+        total_units += product["quantity"]
     print(
-        f"Kopā: {total:.2f} EUR ({productCount} {'produkts' if productCount == 1 else 'produkti'})"
+        f"Kopā: {total_sum:.2f} EUR ({total_units} {'vienība' if total_units == 1 else 'vienības'}, {productCount} {'produkts' if productCount == 1 else 'produkti'})"
     )
 
 

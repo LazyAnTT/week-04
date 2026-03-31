@@ -1,14 +1,12 @@
 [
   {
-    "product_name": "Maize",
-    "price": "1.84"
-  },
-  {
     "product_name": "Siers",
-    "price": "4.42"
+    "quantity": 2,
+    "price": 3.902
   },
   {
-    "product_name": "Banāni",
-    "price": "2.40"
+    "product_name": "Maize",
+    "quantity": 2,
+    "price": 2.4
   }
 ]
